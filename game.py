@@ -1,5 +1,5 @@
 class Game:
-	def __init(self, nplayers, type, lives):
+	def __init(self, nplayers, type, lives, mapname):
 		# TODO Select Game Type
 		# - 1P
 		# - 2P
@@ -10,8 +10,6 @@ class Game:
 		# in case of slave network game this is not needed
 		# Get the name of the player + color
 
-		# TODO choose mapname
-		mapname = "simple"
 		self.bord = Bord("maps"+ mapname + ".sn")
 
 		# TODO: Pick name/color

@@ -1,33 +1,35 @@
 #!/usr/bin/python
 
-#import sys, pygame
+import sys, pygame
 from pprint import pprint
-#from pygame import *
+from pygame import *
 
 from snake import Snake
 from bord import Bord
 from game import Game
 from player import Player
+from renderer import Renderer
+
 
 
 def main():
-	bord = Bord("maps/simple.sn");
-	pprint (vars(bord))
-
-	quit()
 	
 	pygame.init()
 
 	clock = pygame.time.Clock()
 
 	size = width, height = 640,480
-	black = 0,0,0
 	screen = pygame.display.set_mode(size)
+  pygame.display.set_caption('snake')
+	Renderer.size = size
+	Rednerer.screen = screen
 
+	# TODO add a menu!
+	# TODO put this in combinition with menu into loop
 
-		screen.fill(black)
-	#	screen.blit(ball, ballrect)
-		pygame.display.flip()
+	# number of player, game type, lives, mapname
+	game = Game(2, "2P", 5, "simple"):
+	
 
 if __name__ == "__main__" :
 	main ()

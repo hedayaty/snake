@@ -5,7 +5,7 @@ class Player:
 		self.snake = Snake(board)
 		self.lives = lives
 
-	def die (self)
+	def die (self):
 		self.lives -= 1
 		self.snake = Snake(bord)
 		return self.lives == 0
