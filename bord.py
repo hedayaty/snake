@@ -13,8 +13,8 @@ class Bord:
 	def __init__(self, filename):
 		# read info from file
 		with open (filename) as f: 
-			self.name =	f.readline()
-			self.dimentions = map(int,f.readline().split())
+			self.name =	f.readline().strip()
+			self.dimentions = list(map(int,f.readline().split()))
 			self.maxmplayers = int(f.readline())
 			self.obstacles = []
 			linen = 0
@@ -37,6 +37,6 @@ class Bord:
 # Find the next point on the bord in direction dir, consdering map bounderies
 # Wrapping around if reached the bounderies
 	def progress (self, head, dir) :
-		return map(head, dir, self.dimentions)
+		return list(map(head, dir, self.dimentions))
 
 # vim: ts=2 sw=2

@@ -23,12 +23,12 @@ class Snake :
 # Go ahead using dir, if there is potential to grow then  grow
 	def go (self):
 		head = self.get_head()
-		head = map(self.bord.progress, head, self.dir)
+		head = self.bord.progress(head, self.dir)
 		self.body.append (head)
 		if self.growable > 0 :
 			self.growable -= 1
 		else :
-			self.body.pop()
+			self.body.pop(0)
 		
 		return head
 
