@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys, pygame
+import operator
 from pprint import pprint
 from pygame import *
 
@@ -10,8 +11,6 @@ from game import Game
 from player import Player
 from renderer import Renderer
 
-
-
 def main():
 	
 	pygame.init()
@@ -20,7 +19,7 @@ def main():
 
 	size = width, height = 640,480
 	screen = pygame.display.set_mode(size)
-  pygame.display.set_caption('snake')
+#  pygame.display.set_caption('snake')
 	Renderer.size = size
 	Rednerer.screen = screen
 
@@ -28,7 +27,7 @@ def main():
 	# TODO put this in combinition with menu into loop
 
 	# number of player, game type, lives, mapname
-	game = Game(2, "2P", 5, "simple"):
+	game = Game(2, "2P", 5, "simple")
 	
 
 if __name__ == "__main__" :

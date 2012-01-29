@@ -24,7 +24,7 @@ class Bord:
 				self.spawn.update ({int(line[i]):(linen,i) for i in range(len(line)) if line[i] in map(str,range (1,10))})
 				linen += 1
 
-		self.items = []
+		self.items = {}
 		
 
 ########################## Add ##################################

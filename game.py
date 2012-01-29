@@ -54,11 +54,13 @@ class Game:
 						pass
 					elif event.key == pygame.k_d:
 						pass
+		reduce(operator.add, (player.snake.body for player in players))		
 
 		for player in self.players:
 			head = player.snake.go()
-			if head in bord.obstacles :
+			if head in bord.obstacles or head in playerbodies :
 				player.die()
 			elif head in bord.items() :
 				pass # TODO
+		
 # vim: ts=2 sw=2
