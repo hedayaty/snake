@@ -29,7 +29,7 @@ class Bord:
 
 ########################## Add ##################################
 # Sudo function used in conjuction with map function 
-	def add (a, b, c) :
+	def add (self, a, b, c) :
 		return (a + b + c) % c;
 		
 ######################### Progress ###############################
@@ -37,6 +37,13 @@ class Bord:
 # Find the next point on the bord in direction dir, consdering map bounderies
 # Wrapping around if reached the bounderies
 	def progress (self, head, dir) :
-		return list(map(head, dir, self.dimentions))
+		return list(map(self.add, head, dir, self.dimentions))
+
+########################  Get Spawn ######################
+# Input: player-number
+# Output: location to spawn
+	def getspawn (self, number):
+# TODO: check if place is available
+		return self.spawn[number]
 
 # vim: ts=2 sw=2

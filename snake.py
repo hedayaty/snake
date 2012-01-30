@@ -5,8 +5,8 @@ class Snake :
 # Create a new snake with head at x,y
 # Potential to grow as initial
 # heading to bord's default direction
-	def __init__(self, x, y, initial, bord) :
-		self.body = [(x,y)]
+	def __init__(self, spawn, initial, bord) :
+		self.body = [spawn]
 		self.growable = initial
 		self.bord = bord
 		self.dir = bord.defaultdir
@@ -15,7 +15,7 @@ class Snake :
 # Input: void
 # Get the head
 	def get_head (self):
-		return self.body[self.length - 1]
+		return self.body[-1]
 
 ############################# Go ##########################################
 # Input: void

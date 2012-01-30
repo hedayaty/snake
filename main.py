@@ -15,19 +15,17 @@ def main():
 	
 	pygame.init()
 
-	clock = pygame.time.Clock()
-
 	size = width, height = 640,480
-	screen = pygame.display.set_mode(size)
+	renderer = Renderer (size)
 #  pygame.display.set_caption('snake')
-	Renderer.size = size
-	Rednerer.screen = screen
 
 	# TODO add a menu!
 	# TODO put this in combinition with menu into loop
 
-	# number of player, game type, lives, mapname
-	game = Game(2, "2P", 5, "simple")
+	# renderer, number of player, game type, lives, mapname
+	game = Game(renderer, 2, "2P", 5, "simple")
+
+	game.mainloop ()
 	
 
 if __name__ == "__main__" :
