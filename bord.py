@@ -1,10 +1,10 @@
 
 class Bord:
 # Define directions
-	left = -1,0
-	right= +1,0
-	up = -1,0
-	down = +1,0
+	left = [-1,0]
+	right= [+1,0]
+	up = [0,-1]
+	down = [0,+1]
 	defaultdir = right
 
 ##################### Init ###################################
@@ -20,8 +20,8 @@ class Bord:
 			linen = 0
 			self.spawn = {}
 			for line in f:
-				self.obstacles.extend([(linen,i) for i in range(len(line)) if line[i] == "#"] )
-				self.spawn.update ({int(line[i]):(linen,i) for i in range(len(line)) if line[i] in map(str,range (1,10))})
+				self.obstacles.extend([[i,linen] for i in range(len(line)) if line[i] == "#"] )
+				self.spawn.update ({int(line[i]):[i,linen] for i in range(len(line)) if line[i] in map(str,range (1,10))})
 				linen += 1
 
 		self.items = {}

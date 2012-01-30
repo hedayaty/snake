@@ -3,12 +3,13 @@ from pygame import *
 
 from bord import Bord
 from player import Player
-from renderer import Renderer
+
+import renderer
+#from renderer import updatebord,render
 
 class Game:
-	def __init__(self, renderer, nplayers, type, lives, mapname):
+	def __init__(self, nplayers, type, lives, mapname):
 
-		self.renderer = renderer
 		# TODO Select Game Type
 		# - 1P
 		# - 2P
@@ -37,47 +38,33 @@ class Game:
 
 	def mainloop (self):
 
-		ended = False
 		clock = pygame.time.Clock()
 		# TODO: Trow items on the bord!
-
-		while ended == False:
+		while 1:
 			clock.tick(10)
 
 			for event in pygame.event.get():
-				if event.type == pygame.QUIT: sys.exit()
+				if event.type == pygame.QUIT: 
+					return
 				if event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_ESCAPE:
-						print "Hit Espace"
-						ended = True
-						break
-					elif event.key == pygame.K_DOWN:
-						print "Player 1 Down"
-						break
-					elif event.key == pygame.K_UP:
-						pass
-					elif event.key == pygame.K_LEFT:
-						pass
-					elif event.key == pygame.K_RIGHT:
-						pass
-					elif event.key == pygame.K_s:
-						pass
-					elif event.key == pygame.K_w:
-						pass
-					elif event.key == pygame.K_a:
-						pass
-					elif event.key == pygame.K_d:
-						pass
+						return
+					for player in self.players:
+						player.usekey (event.key)
+						
+						
+			#TODO: for network game as master, also process keys from client
+			#TODO: for network game as slave, also send keys to server
 
 			playerbodies = reduce(operator.add, (player.snake.body for player in self.players))		
-
+	
 			for player in self.players:
-				head = player.snake.go()
+				head = player.go()
 				if head in self.bord.obstacles or head in playerbodies :
 					player.die()
 				elif head in self.bord.items.keys() :
 					pass # TODO
 
-			self.renderer.render()
+			renderer.render(self.players)
 		
 # vim: ts=2 sw=2
