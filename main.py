@@ -16,9 +16,9 @@ def main():
 	
 	pygame.init()
 
-	size = width, height = [640,480]
+	size = width, height = [640,480+16]
 	renderer.init(size)
-#  pygame.display.set_caption('snake')
+	pygame.display.set_caption("snake")
 
 	# TODO add a menu!
 	# TODO put this in combinition with menu into loop

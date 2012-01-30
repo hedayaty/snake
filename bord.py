@@ -1,10 +1,10 @@
 
 class Bord:
 # Define directions
-	left = [-1,0]
-	right= [+1,0]
-	up = [0,-1]
-	down = [0,+1]
+	left = -1 , 0
+	right= +1 , 0
+	up =    0 , -1
+	down =  0 , +1
 	defaultdir = right
 
 ##################### Init ###################################
@@ -20,8 +20,8 @@ class Bord:
 			linen = 0
 			self.spawn = {}
 			for line in f:
-				self.obstacles.extend([[i,linen] for i in range(len(line)) if line[i] == "#"] )
-				self.spawn.update ({int(line[i]):[i,linen] for i in range(len(line)) if line[i] in map(str,range (1,10))})
+				self.obstacles.extend([(i,linen) for i in range(len(line)) if line[i] == "#"] )
+				self.spawn.update ({int(line[i]):(i,linen) for i in range(len(line)) if line[i] in map(str,range (1,10))})
 				linen += 1
 
 		self.items = {}
@@ -37,7 +37,7 @@ class Bord:
 # Find the next point on the bord in direction dir, consdering map bounderies
 # Wrapping around if reached the bounderies
 	def progress (self, head, dir) :
-		return list(map(self.add, head, dir, self.dimentions))
+		return tuple(map(self.add, head, dir, self.dimentions))
 
 ########################  Get Spawn ######################
 # Input: player-number

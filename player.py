@@ -8,12 +8,15 @@ class Player:
 	initial = 4
 
 	def __init__(self, bord, number, name, color, lives):
+		self.score = 0
 		self.number = number
 		self.color = color
 		self.bord = bord
 		self.snake = Snake(self.bord.getspawn(self.number), self.initial, self.bord)
 		self.lives = lives
-#TODO : Later remove this from being hard-coded
+		self.dead = 0
+
+		#TODO : make keys configurable
 		if number == 1 :
 			self.keylist = {
 						pygame.K_DOWN: self.godown,
@@ -30,11 +33,21 @@ class Player:
 					}
 
 	def die (self):
+		self.score -= 40
 		self.lives -= 1
-		self.snake = Snake(self.bord.getspawn(self.number), self.initial, self.bord)
+		self.dead = 5
 		return self.lives == 0
 
-	def go(self): return self.snake.go()
+	def go(self): 
+		if self.dead == 1:
+			self.snake = Snake(self.bord.getspawn(self.number), self.initial, self.bord)
+		if self.dead > 0:		
+			self.dead -= 1
+		if self.dead == 0 :
+			return self.snake.go()
+		else: 
+			return None
+
 	def goup(self):	self.snake.goup()
 	def godown(self): self.snake.godown()
 	def goright(self): self.snake.goright()
@@ -43,5 +56,6 @@ class Player:
 	def usekey (self, key):
 		if key in self.keylist.keys():
 			self.keylist[key]()
+
 
 # vim: ts=2 sw=2
