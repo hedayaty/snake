@@ -28,12 +28,16 @@ class Player:
 						pygame.K_RIGHT: self.goright,
 					}
 		elif dev == "keybord" : # So far at most two players
-					self.keylist = {
+			self.keylist = {
 						pygame.K_s: self.godown,
 						pygame.K_w: self.goup,
 						pygame.K_a: self.goleft,
 						pygame.K_d: self.goright,
 					}
+		else: 
+			self.keylist = {}
+			
+
 ############################ Die ################################
 # Input: void
 # Output: if player has any more lives
@@ -42,6 +46,7 @@ class Player:
 		self.lives -= 1
 		self.dead = self.deadtimer
 		return self.lives == 0
+
 ############################ GO ###################################
 # Input: go ahead
 # Output: head if player is alive; otherwise, none
@@ -54,6 +59,7 @@ class Player:
 			return self.snake.go()
 		else: 
 			return None
+
 ###################### GoUp, GoDown, GoLeft, GoRight ##############
 	def goup(self):	self.snake.goup()
 	def godown(self): self.snake.godown()
@@ -67,5 +73,17 @@ class Player:
 		if key in self.keylist.keys():
 			self.keylist[key]()
 
+###################### Make AI Move ##############################
+	def aimove(self):
+		start = self.snake.gethead()
+		end = game.digplace
+		
+		def getneighbors ((point,cost)):
+			return [ (bord.progess (point, dir), cost + 1) for dir in [bord.up, bord.down, bord.left, bord.right]\
+				 if not bord.progess (point, dir) in bord.obstacles + game.playerbodies ]
 
+		moves = getneighbors((start,0))
+		
+		
+		
 # vim: ts=2 sw=2

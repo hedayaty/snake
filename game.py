@@ -13,7 +13,7 @@ otheritemtypes = ["R", " ", "P"]
 # Supposed to choose names and color for players
 def init(gametype, lives):
 	global players, items
-	# TODO Use Game Type
+	# Use Game Type
 	# - 1P
 	# - 2P
 	# - 1P vs AI
@@ -26,7 +26,11 @@ def init(gametype, lives):
 		
 	if gametype != "slave" :
 		list = os.listdir("maps")
-		mapname = menu.choose (itertools,product(list,list))
+		list.sort()
+		mapname = menu.choose (zip(list,list))
+		if mapname == None :
+			return False
+
 	# TODO Get the name of the player + color
 
 	bord.init ("maps/"+ mapname)
@@ -38,9 +42,17 @@ def init(gametype, lives):
 
 	if nplayers == 2:
 		name2 = "Player 2"
-		players.append(Player("keybord", bord.spawn[2], name2, renderer.pink, lives))
+		if gametype == "ai":
+			dev2 = "ai"
+		elif gametype == "master":
+			dev2 = "net"
+		else:
+			dev2 = "keybord"
+			
+		players.append(Player(dev2, bord.spawn[2], name2, renderer.pink, lives))
 
 	renderer.updatebord()
+	return True
 
 ###################### Place #########################################
 # Input: type of item
@@ -78,7 +90,7 @@ def spawn():
 			tries += 1
 			if tries == dim[0] * dim[1]: # Almost all the bord!
 				tries = 0
-				margins -= 1
+				margin -= 1
 				# hopefully, margins will never too small
 		else :
 			break
@@ -109,6 +121,7 @@ def mainloop ():
 					return
 				for player in players:
 					player.usekey (event.key)
+			
 					
 		if gameover:
 			continue
@@ -138,7 +151,7 @@ def mainloop ():
 				# TODO: Assumed items are only numbers
 				del items[head]
 				player.score += 10 * digit
-				player.snake.grow(digit * 3)
+				player.snake.grow(digit * 4)
 				digit += 1
 				if digit == 10:
 					gameover = True

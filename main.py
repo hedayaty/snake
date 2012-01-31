@@ -30,9 +30,9 @@ def main():
 
 		if gametype == None : 
 			break
-
-		game.init (gametype, 5)
-		game.mainloop ()
+		
+		if game.init (gametype, 5):
+			game.mainloop ()
 
 	pygame.display.quit()
 	

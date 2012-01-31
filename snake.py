@@ -16,7 +16,7 @@ class Snake :
 ############################# Get Head	###################################
 # Input: void
 # Get the head
-	def get_head (self):
+	def gethead (self):
 		return self.body[-1]
 
 ############################# Go ##########################################
@@ -24,7 +24,7 @@ class Snake :
 # Return: new head
 # Go ahead using dir, if there is potential to grow then  grow
 	def go (self):
-		head = self.get_head()
+		head = self.gethead()
 		head = bord.progress(head, self.dir)
 		self.body.append (head)
 		if self.growable > 0 :
