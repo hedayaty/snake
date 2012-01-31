@@ -1,3 +1,5 @@
+import bord
+
 class Snake :
 
 ############################# New Snake ###################################
@@ -5,11 +7,11 @@ class Snake :
 # Create a new snake with head at x,y
 # Potential to grow as initial
 # heading to bord's default direction
-	def __init__(self, spawn, initial, bord) :
+	def __init__(self, spawn, initial) :
 		self.body = [spawn]
 		self.growable = initial
-		self.bord = bord
 		self.dir = bord.defaultdir
+		self.useddir = self.dir
 		
 ############################# Get Head	###################################
 # Input: void
@@ -23,13 +25,13 @@ class Snake :
 # Go ahead using dir, if there is potential to grow then  grow
 	def go (self):
 		head = self.get_head()
-		head = self.bord.progress(head, self.dir)
+		head = bord.progress(head, self.dir)
 		self.body.append (head)
 		if self.growable > 0 :
 			self.growable -= 1
 		else :
 			self.body.pop(0)
-		
+		self.useddir = self.dir	
 		return head
 
 ######################### Reverse ########################################
@@ -42,20 +44,20 @@ class Snake :
 # Input: void
 # Change direction to up/down/right/left
 	def goup (self):
-		if self.dir != self.bord.down :
-			self.dir = self.bord.up
+		if self.useddir != bord.down :
+			self.dir = bord.up
 
 	def godown (self):
-		if self.dir != self.bord.up :
-			self.dir = self.bord.down
+		if self.useddir != bord.up :
+			self.dir = bord.down
 
 	def goright (self):
-		if self.dir != self.bord.left :
-			self.dir = self.bord.right
+		if self.useddir != bord.left :
+			self.dir = bord.right
 
 	def goleft (self):
-		if self.dir != self.bord.right :
-			self.dir = self.bord.left
+		if self.useddir != bord.right :
+			self.dir = bord.left
 
 ########################### Grow ###############################################
 # Input: length

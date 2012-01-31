@@ -1,124 +1,167 @@
-import sys,pygame,operator,random
+import sys,pygame,operator,random, itertools, os
 from pygame import *
 
-from bord import Bord
 from player import Player
 
-import renderer
-#from renderer import updatebord,render
+import renderer, bord, menu
 
-class Game:
-	def __init__(self, nplayers, type, lives, mapname):
+otheritemtypes = ["R", " ", "P"]
 
-		# TODO Select Game Type
-		# - 1P
-		# - 2P
-		# - 1P vs AI
-		# - 1p vs Network (Master)
-		# - Network vs 1p (Slave)
-		# TODO Select Bord if needed
-		# in case of slave network game this is not needed
-		# Get the name of the player + color
-
-		self.bord = Bord("maps/"+ mapname + ".sn")
-
-		# TODO: Pick name/color
-		name1 = "Player 1"
-		color1 = [ 0, 0, 255] # Blue
-		self.players = [Player(self.bord, 1, name1, color1, lives)]
-
-		if nplayers == 2:
-			name2 = "Player 2"
-			color2 = [ 255, 0, 255] # Red
-			self.players.append(Player(self.bord, 2, name2, color2, lives))
-
-		self.type = type
-		self.otheritemtypes = ["R", " ", "P"]
-		renderer.updatebord(self.bord)
-	
-	def place (self, playerbodies, type):
-		blocked = playerbodies + \
-							self.bord.obstacles +\
-							self.bord.items.keys()
-		dim = self.bord.dimentions
-		place = blocked[0]
-		while place in blocked:
-			place = random.randint(0,dim[0]-1),random.randint(0,dim[1]-1)
-
-		self.bord.items[place] = {"type": type, "timer":300}
-		return place
-
-	def mainloop (self):
-		digit = 1
-		clock = pygame.time.Clock()
-
-		# TODO: Trow items on the bord!
-		playerbodies = reduce(operator.add, (player.snake.body for player in self.players))		
-		digplace = self.place(playerbodies, str(digit))
-		wait = False
-
-		while 1:
-			clock.tick(10)
-
-			# Render the screen
-			renderer.render(self.players, self.bord.items)
-
-			for event in pygame.event.get():
-				if event.type == pygame.QUIT: 
-					return
-				if event.type == pygame.KEYDOWN:
-					if event.key == pygame.K_ESCAPE:
-						return
-					for player in self.players:
-						player.usekey (event.key)
-						
-			if wait:
-				continue
-			#TODO: for network game as master, also process keys from client
-			#TODO: for network game as slave, also send keys to server
-
-	
-			for player in self.players:
-				head = player.go()
-				# Check if hit the wall or ther players
-				if head in self.bord.obstacles or head in playerbodies : 
-					if digit > 5:
-						digit -= 4
-					else:
-						digit = 1
-					self.bord.items[digplace]["type"] = str(digit)
-					if player.die() :
-						wait = True
-						break
-
-				# Check if hit any items
-				elif head in self.bord.items.keys() :
-					# TODO: Assumed items are only numbers
-					del self.bord.items[head]
-					player.score += 10 * digit
-					player.snake.grow(digit)
-					digit += 1
-					if digit == 10:
-						wait = True
-						break
-					else:
-						digplace = self.place (playerbodies, str(digit))
-				
-
-			# keep track of player bodies as obstacles as well
-			playerbodies = reduce(operator.add, (player.snake.body for player in self.players))		
-
-			# Check for timer exppirations
-			for place in self.bord.items.keys() :
-				self.bord.items[place]["timer"] -= 1
-				if self.bord.items[place]["timer"] == 0 :
-					type = self.bord.items[place]["type"]
-					del self.bord.items[place]
-					if type in self.otheritemtypes :
-						self.place (playerbodies, random.choice(self.otheritemtypes))
-					else: # It is number, put the same number somewhere else on the bord
-						digplace = self.place (playerbodies, type)
-
-				
+#################### Initilize Game #########################
+# Input: number of player, typeof game, player lives, map file name
+# Initilizes a game with the given parameters
+# Supposed to choose names and color for players
+def init(gametype, lives):
+	global players, items
+	# TODO Use Game Type
+	# - 1P
+	# - 2P
+	# - 1P vs AI
+	# - 1p vs Network (Master)
+	# - Network vs 1p (Slave)
+	if gametype == "1p" : 
+		nplayers = 1
+	else :
+		nplayers = 2
 		
+	if gametype != "slave" :
+		list = os.listdir("maps")
+		mapname = menu.choose (itertools,product(list,list))
+	# TODO Get the name of the player + color
+
+	bord.init ("maps/"+ mapname)
+	items = {}
+
+	# TODO: Pick name/color
+	name1 = "Player 1"
+	players = [Player("keypad", bord.spawn[1], name1, renderer.blue, lives)]
+
+	if nplayers == 2:
+		name2 = "Player 2"
+		players.append(Player("keybord", bord.spawn[2], name2, renderer.pink, lives))
+
+	renderer.updatebord()
+
+###################### Place #########################################
+# Input: type of item
+# Output: place of item
+# Places an item of type in a free spot with default timeout 300
+def place (type):
+	blocked = playerbodies + \
+						bord.obstacles +\
+						items.keys()
+	dim = bord.dim
+	loc = blocked[0]
+	while loc in blocked:
+		loc = random.randint (0, dim[0] - 1),\
+						random.randint (0, dim[1] - 1)
+
+	items[loc] = {"type" : type, "timer" : 300}
+	return loc
+
+######################## Spawn ###################################
+# Input: void
+# Ouput: a free location for player spawn
+def spawn():
+	blocked = set(playerbodies + \
+						bord.obstacles +\
+						items.keys())
+	dim = bord.dim
+	margin = 5
+	tries = 0
+	while 1:
+		loc = random.randint (margin, dim[0] - margin - 1),\
+					random.randint (margin, dim[1] - margin - 1)
+		if set(tuple(map(operator.add, neib, loc))\
+				for	neib in itertools.product (range(-margin, margin+1), repeat=2)
+				) &	blocked :
+			tries += 1
+			if tries == dim[0] * dim[1]: # Almost all the bord!
+				tries = 0
+				margins -= 1
+				# hopefully, margins will never too small
+		else :
+			break
+	return loc
+		
+def mainloop ():
+	global playerbodies, items, gameover, clock
+	digit = 1
+	clock = pygame.time.Clock()
+
+	playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))	
+
+	# TODO: Trow more items on the bord!
+	digplace = place(str(digit))
+	gameover = False
+
+	while 1:
+		clock.tick(10)
+
+		# Render the screen
+		renderer.render()
+
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT: 
+				return
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_ESCAPE:
+					return
+				for player in players:
+					player.usekey (event.key)
+					
+		if gameover:
+			continue
+		#TODO: for network game as master, also process keys from client
+		#TODO: for network game as slave, also send keys to server
+
+
+		for player in players:
+			head = player.go()
+
+			# Check if hit the wall or ther players
+			if head in bord.obstacles or head in playerbodies : 
+	#			print "head", head
+	#			print "obstacles", bord.obstacles
+		#		print "bodies", playerbodies
+				if digit > 5:
+					digit -= 4
+				else:
+					digit = 1
+				items[digplace]["type"] = str(digit)
+				if player.die() :
+					gameover = True
+					break
+
+			# Check if hit any items
+			elif head in items.keys() :
+				# TODO: Assumed items are only numbers
+				del items[head]
+				player.score += 10 * digit
+				player.snake.grow(digit * 3)
+				digit += 1
+				if digit == 10:
+					gameover = True
+					break
+				else:
+					digplace = place (str(digit))
+			
+
+		# keep track of player bodies as obstacles as well
+		playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))		
+
+		# Check for timer exppirations
+		for loc in items.keys() :
+			item = items[loc]
+			item["timer"] -= 1
+			if item["timer"] == 0 :
+				type = item["type"]
+				del item
+				if type in otheritemtypes :
+					place (random.choice(otheritemtypes))
+				else: # It is number, put the same number somewhere else on the bord
+					digplace = place (type)
+
+			
+	
 # vim: ts=2 sw=2

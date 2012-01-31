@@ -1,58 +1,68 @@
 import pygame
 
-from bord import Bord
 from snake import Snake
+
+import game
 
 class Player:
 	# Initilize
 	initial = 4
-
-	def __init__(self, bord, number, name, color, lives):
+	deadtimer = 5
+################################ Init #####################
+# Input: Spawn location, player name, player color, player initial lives
+# Initilized player
+	def __init__(self, dev, spawn, name, color, lives):
+		self.name = name
 		self.score = 0
-		self.number = number
 		self.color = color
-		self.bord = bord
-		self.snake = Snake(self.bord.getspawn(self.number), self.initial, self.bord)
+		self.snake = Snake(spawn, self.initial)
 		self.lives = lives
 		self.dead = 0
 
 		#TODO : make keys configurable
-		if number == 1 :
+		if dev == "keypad" :
 			self.keylist = {
 						pygame.K_DOWN: self.godown,
 						pygame.K_UP: self.goup,
 						pygame.K_LEFT: self.goleft,
 						pygame.K_RIGHT: self.goright,
 					}
-		elif number == 2 : # So far at most two players
+		elif dev == "keybord" : # So far at most two players
 					self.keylist = {
 						pygame.K_s: self.godown,
 						pygame.K_w: self.goup,
 						pygame.K_a: self.goleft,
 						pygame.K_d: self.goright,
 					}
-
+############################ Die ################################
+# Input: void
+# Output: if player has any more lives
 	def die (self):
 		self.score -= 40
 		self.lives -= 1
-		self.dead = 5
+		self.dead = self.deadtimer
 		return self.lives == 0
-
+############################ GO ###################################
+# Input: go ahead
+# Output: head if player is alive; otherwise, none
 	def go(self): 
 		if self.dead == 1:
-			self.snake = Snake(self.bord.getspawn(self.number), self.initial, self.bord)
+			self.snake = Snake(game.spawn(), self.initial)
 		if self.dead > 0:		
 			self.dead -= 1
 		if self.dead == 0 :
 			return self.snake.go()
 		else: 
 			return None
-
+###################### GoUp, GoDown, GoLeft, GoRight ##############
 	def goup(self):	self.snake.goup()
 	def godown(self): self.snake.godown()
 	def goright(self): self.snake.goright()
 	def goleft(self): self.snake.goleft()
 
+####################### Use key ###################################
+# Input: key
+# Change direction is key is for me
 	def usekey (self, key):
 		if key in self.keylist.keys():
 			self.keylist[key]()

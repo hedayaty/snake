@@ -5,12 +5,7 @@ import operator
 from pprint import pprint
 from pygame import *
 
-from snake import Snake
-from bord import Bord
-from game import Game
-from player import Player
-
-import renderer
+import game,renderer, menu
 
 def main():
 	
@@ -24,9 +19,20 @@ def main():
 	# TODO put this in combinition with menu into loop
 
 	# number of player, game type, lives, mapname
-	game = Game(2, "2P", 5, "simple")
+	while 1:
+		gametype = menu.choose (													\
+			[("New 1 Single Player", "1p"), 							\
+			 ("New 2 Player Game", "2p"),									\
+			 ("New 2 Player vs AI", "ai"),								\
+			 ("New Network Game as Slave", "slave"),			\
+			 ("New Netwrok Game as Master", "master"),		\
+			 ("QUIT", None)]);
 
-	game.mainloop ()
+		if gametype == None : 
+			break
+
+		game.init (gametype, 5)
+		game.mainloop ()
 
 	pygame.display.quit()
 	
