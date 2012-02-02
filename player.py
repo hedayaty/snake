@@ -1,8 +1,8 @@
-import pygame
+import pygame,operator
 
 from snake import Snake
 
-import game
+import game,bord
 
 class Player:
 	# Initilize
@@ -12,12 +12,14 @@ class Player:
 # Input: Spawn location, player name, player color, player initial lives
 # Initilized player
 	def __init__(self, dev, spawn, name, color, lives):
+		self.dev = dev
 		self.name = name
 		self.score = 0
 		self.color = color
 		self.snake = Snake(spawn, self.initial)
 		self.lives = lives
 		self.dead = 0
+		self.path = []
 
 		#TODO : make keys configurable
 		if dev == "keypad" :
@@ -45,6 +47,7 @@ class Player:
 		self.score -= 40
 		self.lives -= 1
 		self.dead = self.deadtimer
+		self.path = []
 		return self.lives == 0
 
 ############################ GO ###################################
@@ -75,14 +78,51 @@ class Player:
 
 ###################### Make AI Move ##############################
 	def aimove(self):
+		if self.dead > 0:
+			return
 		start = self.snake.gethead()
 		end = game.digplace
-		
-		def getneighbors ((point,cost)):
-			return [ (bord.progess (point, dir), cost + 1) for dir in [bord.up, bord.down, bord.left, bord.right]\
-				 if not bord.progess (point, dir) in bord.obstacles + game.playerbodies ]
+		blocked = set (bord.obstacles + game.playerbodies)
+		def getneighbors (point):
+			return [ (bord.progress (point, dir)) for dir in [bord.up, bord.down, bord.left, bord.right]\
+				 if bord.progress (point, dir) not in blocked ]
+	
+		# If old path is ok, continue!
+		if self.path == [] or self.path[-1] != end or set(self.path) & set(game.playerbodies) != [] :	
+			# Use BFS
+			moves = getneighbors(start) 
+			parrent = {start:None}
+			for move in moves:
+				parrent[move] = start
+			mark = set([start]) | set(moves)
+			while moves :
+				next = []
+				for move in moves :
+					for point in getneighbors(move) :
+						if point not in mark:
+							next.append(point)
+							mark.add(point)
+							parrent[point] = move
+				moves = next
+				if end in mark:
+					break
+			# If there is no path do nothing!
+			if end not in mark:
+				self.path = []
+				return
 
-		moves = getneighbors((start,0))
+			# Find the path
+			node = end
+			self.path = []
+			while parrent[node]:
+				self.path.append(node)
+				node = parrent[node]
+			
+			self.path.reverse()
+
+		dir = tuple(map(operator.sub, self.path[0], start))
+		self.path.pop(0)
+		{ bord.up: self.goup, bord.down:self.godown, bord.left: self.goleft, bord.right: self.goright }[dir]()
 		
 		
 		

@@ -97,7 +97,7 @@ def spawn():
 	return loc
 		
 def mainloop ():
-	global playerbodies, items, gameover, clock
+	global playerbodies, items, gameover, clock, digplace
 	digit = 1
 	clock = pygame.time.Clock()
 
@@ -121,10 +121,14 @@ def mainloop ():
 					return
 				for player in players:
 					player.usekey (event.key)
-			
-					
+
 		if gameover:
 			continue
+
+		for player in players:	
+			if player.dev == "ai":
+				player.aimove()
+					
 		#TODO: for network game as master, also process keys from client
 		#TODO: for network game as slave, also send keys to server
 
