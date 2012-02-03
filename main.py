@@ -14,24 +14,22 @@ def main():
 	size = width, height = [640,480+16]
 	renderer.init(size)
 	pygame.display.set_caption("snake")
-
-	# TODO add a menu!
-	# TODO put this in combinition with menu into loop
-
+	menu.init()
+	
+	
 	# number of player, game type, lives, mapname
 	while 1:
-		gametype = menu.choose (													\
-			[("New 1 Single Player", "1p"), 							\
-			 ("New 2 Player Game", "2p"),									\
-			 ("New 2 Player vs AI", "ai"),								\
-			 ("New Network Game as Slave", "slave"),			\
-			 ("New Netwrok Game as Master", "master"),		\
-			 ("QUIT", None)]);
+		gametype = menu.choose (																					\
+			[{ "label" : "Single Player", "value": "1p"}, 									\
+			 { "label" : "2 Players Game", "value": "2p"},									\
+			 { "label" : "Create a Network Game", "value" : "master"},			\
+			 { "label" : "Connect to a Network Game", "value" : "slave"},		\
+			 { "label" : "QUIT", "value": None}]);
 
 		if gametype == None : 
 			break
 		
-		if game.init (gametype, 5):
+		if game.init (gametype):
 			game.mainloop ()
 
 	pygame.display.quit()

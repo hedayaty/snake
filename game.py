@@ -3,7 +3,7 @@ from pygame import *
 
 from player import Player
 
-import renderer, bord, menu
+import renderer, board, menu
 
 otheritemtypes = ["R", " ", "P"]
 
@@ -11,48 +11,92 @@ otheritemtypes = ["R", " ", "P"]
 # Input: number of player, typeof game, player lives, map file name
 # Initilizes a game with the given parameters
 # Supposed to choose names and color for players
-def init(gametype, lives):
+def init(gametype):
 	global players, items
-	# Use Game Type
-	# - 1P
-	# - 2P
-	# - 1P vs AI
-	# - 1p vs Network (Master)
-	# - Network vs 1p (Slave)
-	if gametype == "1p" : 
-		nplayers = 1
-	else :
-		nplayers = 2
-		
+	global ucolors, udevs, devs, colors, lives
+	global blue, pink, green, red, orange,cyan
+	global nlpr, cont
+
+	blue = (0,0,255)
+	pink = (255,20,147)
+	green =(0,128,0)
+	red = (255,0,0)
+	orange = (255,165,0)
+	cyan= (0,255,255)
+	
+
 	if gametype != "slave" :
 		list = os.listdir("maps")
 		list.sort()
-		mapname = menu.choose (zip(list,list))
+		mapname = menu.choose ([{ "label" : file, "value" : file} for file in list])
 		if mapname == None :
 			return False
 
-	# TODO Get the name of the player + color
+		board.init ("maps/"+ mapname)
+		items = {}
+	
+	# Get Game options
+	boolean = [ { "label" : "On", "value": True }, { "label" : "Off", "value": False } ]
+	tpoptions = [{ "description" : "NLPR: ", "name" : "nlpr", "options" : boolean}, {"description" : "Continue: ", "name" : "cont", "options" : boolean}]
+	if gametype == "1p":
+		tpoptions = []
 
-	bord.init ("maps/"+ mapname)
-	items = {}
+	options = menu.select (tpoptions + [{	"description" : "Lives:", "name" : "lives", "options" : [ { "label" : str(x), "value" :x } for x in [1, 2, 3, 4, 5, 6, 10, 20, 50, 64, 100]] } ])
+	if options == False:
+		return False
+	if gametype == "1p":
+		nlpr = False
+		cont = False
+	else:
+		nlpr = options["nlpr"]["value"]
+		cont = options["cont"]["value"]
+	lives = options["lives"]["value"]
+		
 
-	# TODO: Pick name/color
-	name1 = "Player 1"
-	players = [Player("keypad", bord.spawn[1], name1, renderer.blue, lives)]
+	# Get Players
+	ucolors = set()
+	udevs = set()
+	colors = [blue, pink, green, red, orange, cyan]
+	devs = [("Keypad", "keypad"), ("Keyboard (wasd)", "keyboard"), \
+					("Vim Keys (hjjkl)", "vim"), ("Computer", "ai")]
 
-	if nplayers == 2:
-		name2 = "Player 2"
-		if gametype == "ai":
-			dev2 = "ai"
-		elif gametype == "master":
-			dev2 = "net"
-		else:
-			dev2 = "keybord"
+	if gametype == "1p" : 
+		player1 = getplayer()
+		if player1 == None:
+			return None
+		players = [ player1 ]
 			
-		players.append(Player(dev2, bord.spawn[2], name2, renderer.pink, lives))
+	else :
+		player1 = getplayer()
+		if player1 == None:
+			return None
 
-	renderer.updatebord()
+		player2 = getplayer()
+		if player2 == None:
+			return None
+		players = [ player1, player2 ]
+
+	renderer.updateboard()
 	return True
+
+######################### Get Player #################################
+# Input: void
+# Output: Player instance
+def getplayer():
+	menuname = { "name" : "name", "label" : "Player" , "description" : "Name: "}
+	menudev = { "description" : "Controlls: ", "name" : "dev", "options": [ { "label" : label, "value": dev } for label,dev in devs if dev not in udevs] }
+	menucolor = { "name" : "color", "options" : [ {"label" : "color", "value" : color } for color in colors if color not in ucolors] }
+	values =  menu.select ( [ menuname, menudev, menucolor ])
+	if values == None:
+		return None
+
+	color = values["color"]["value"]
+	name = values["name"]
+	dev = values["dev"]["value"]
+
+	ucolors.add(color)
+	udevs.add(dev)
+	return Player (name, dev, color, lives)
 
 ###################### Place #########################################
 # Input: type of item
@@ -60,9 +104,9 @@ def init(gametype, lives):
 # Places an item of type in a free spot with default timeout 300
 def place (type):
 	blocked = playerbodies + \
-						bord.obstacles +\
+						board.obstacles +\
 						items.keys()
-	dim = bord.dim
+	dim = board.dim
 	loc = blocked[0]
 	while loc in blocked:
 		loc = random.randint (0, dim[0] - 1),\
@@ -76,9 +120,9 @@ def place (type):
 # Ouput: a free location for player spawn
 def spawn():
 	blocked = set(playerbodies + \
-						bord.obstacles +\
+						board.obstacles +\
 						items.keys())
-	dim = bord.dim
+	dim = board.dim
 	margin = 5
 	tries = 0
 	while 1:
@@ -88,7 +132,7 @@ def spawn():
 				for	neib in itertools.product (range(-margin, margin+1), repeat=2)
 				) &	blocked :
 			tries += 1
-			if tries == dim[0] * dim[1]: # Almost all the bord!
+			if tries == dim[0] * dim[1]: # Almost all the board!
 				tries = 0
 				margin -= 1
 				# hopefully, margins will never too small
@@ -101,9 +145,12 @@ def mainloop ():
 	digit = 1
 	clock = pygame.time.Clock()
 
-	playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))	
+	playerbodies = []
+	for player in players:
+		player.start ()
 
-	# TODO: Trow more items on the bord!
+#	playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))	
+	# TODO: Trow more items on the board!
 	digplace = place(str(digit))
 	gameover = False
 
@@ -132,23 +179,27 @@ def mainloop ():
 		#TODO: for network game as master, also process keys from client
 		#TODO: for network game as slave, also send keys to server
 
-
+		heads = {}
 		for player in players:
 			head = player.go()
-
 			# Check if hit the wall or ther players
-			if head in bord.obstacles or head in playerbodies : 
-	#			print "head", head
-	#			print "obstacles", bord.obstacles
-		#		print "bodies", playerbodies
+			if head in board.obstacles or head in playerbodies:
 				if digit > 5:
 					digit -= 4
 				else:
 					digit = 1
 				items[digplace]["type"] = str(digit)
+				if nlpr and head in playerbodies:
+					for other in players:
+						if other != player:
+							if head in other.snake.body:
+								other.snake.grow (len(player.snake.body))
 				if player.die() :
-					gameover = True
-					break
+					if cont and len(players) > 0:
+						players.remove(player)
+					else:
+						gameover = True
+						break
 
 			# Check if hit any items
 			elif head in items.keys() :
@@ -162,7 +213,9 @@ def mainloop ():
 					break
 				else:
 					digplace = place (str(digit))
-			
+		heads[players] = head # Use this to detect head-to-head
+
+						
 
 		# keep track of player bodies as obstacles as well
 		playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))		
@@ -176,7 +229,7 @@ def mainloop ():
 				del item
 				if type in otheritemtypes :
 					place (random.choice(otheritemtypes))
-				else: # It is number, put the same number somewhere else on the bord
+				else: # It is number, put the same number somewhere else on the board
 					digplace = place (type)
 
 			

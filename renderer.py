@@ -1,13 +1,13 @@
 import pygame, operator, random
 from pygame import *
-from player import Player
-from snake import Snake
+#from player import Player
+#from snake import Snake
 
-import bord, game
+import board, game
 
 
 def init (isize) :
-	global size, bordercolor, screen
+	global size, boardercolor, screen
 	global black, green, blue, pink, maroon
 
 	pink = [ 255, 0, 255] 
@@ -18,7 +18,7 @@ def init (isize) :
 	screen = pygame.display.set_mode(isize)
 	black = [0,0,0]
 	green = [0,200,0]
-	bordercolor = [160,140,20]
+	boardercolor = [160,140,20]
 	scorehieght = 16
 	size[1] -= scorehieght
 
@@ -26,17 +26,17 @@ def getRect(pixel):
 	return Rect(map(operator.mul, pixel, pixelsize), pixelsize)
 
 
-def updatebord () :
-	global bordimage, pixelsize, rfont
-	bordimage = pygame.Surface(size)
-	pixelsize = map (operator.div, size, bord.dim) 
+def updateboard () :
+	global boardimage, pixelsize, rfont
+	boardimage = pygame.Surface(size)
+	pixelsize = map (operator.div, size, board.dim) 
 	rfont = pygame.font.Font(None, int (pixelsize[1]*1.6))
-	for pixel in bord.obstacles :
-		bordimage.fill (bordercolor, getRect(pixel))
+	for pixel in board.obstacles :
+		boardimage.fill (boardercolor, getRect(pixel))
 
 def render ():
 	screen.fill(black)
-	screen.blit(bordimage, [0]*2)
+	screen.blit(boardimage, [0]*2)
 	# TODO: Render Items
 	for player in game.players :
 		pixels = player.snake.body
@@ -46,18 +46,15 @@ def render ():
 			screen.fill (player.color, getRect(pixel))
 				
 	for place,item in game.items.iteritems():
-		text = rfont.render (item["type"], True, bordercolor)
+		text = rfont.render (item["type"], True, boardercolor)
 		screen.blit(text, getRect(place))
 	
-	margin = 50
+	share = size[0] / len(game.players)
+
 	for num,player in enumerate(game.players) :
 		text = rfont.render ("{}, Score: {}, Lives: {} "\
 		.format(player.name, player.score, player.lives), True, player.color)
-		if num == 0:
-			loc = margin, size[1] + 1
-		else:
-			loc = size[0] - margin - text.get_size()[0], size[1] + 1
-
+		loc = share * num + (share - text.get_size()[0]) / 2, size[1] + 1
 		screen.blit (text, loc)
 
 	if game.gameover:

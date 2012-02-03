@@ -1,41 +1,45 @@
-import pygame,operator
-
+import pygame,operator,itertools
 from snake import Snake
 
-import game,bord
+import game,board
 
 class Player:
 	# Initilize
 	initial = 4
 	deadtimer = 5
 ################################ Init #####################
-# Input: Spawn location, player name, player color, player initial lives
-# Initilized player
-	def __init__(self, dev, spawn, name, color, lives):
-		self.dev = dev
+# Input:  player name, controller device, player color, player initial lives
+# Initialized player
+	def __init__(self, name, dev, color, lives):
 		self.name = name
-		self.score = 0
+		self.dev = dev
 		self.color = color
-		self.snake = Snake(spawn, self.initial)
 		self.lives = lives
-		self.dead = 0
+		self.score = 0
+
 		self.path = []
 
-		#TODO : make keys configurable
-		if dev == "keypad" :
+		if self.dev == "keypad" :
 			self.keylist = {
 						pygame.K_DOWN: self.godown,
 						pygame.K_UP: self.goup,
 						pygame.K_LEFT: self.goleft,
 						pygame.K_RIGHT: self.goright,
 					}
-		elif dev == "keybord" : # So far at most two players
+		elif self.dev == "keyboard" :
 			self.keylist = {
 						pygame.K_s: self.godown,
 						pygame.K_w: self.goup,
 						pygame.K_a: self.goleft,
 						pygame.K_d: self.goright,
 					}
+		elif self.dev == "vim" :
+			self.keylist = {
+					pygame.K_h: self.goleft,
+					pygame.K_j: self.godown,
+					pygame.K_k: self.goup,
+					pygame.K_l: self.goright,
+				}
 		else: 
 			self.keylist = {}
 			
@@ -55,13 +59,21 @@ class Player:
 # Output: head if player is alive; otherwise, none
 	def go(self): 
 		if self.dead == 1:
-			self.snake = Snake(game.spawn(), self.initial)
+			self.start ()
 		if self.dead > 0:		
 			self.dead -= 1
 		if self.dead == 0 :
 			return self.snake.go()
-		else: 
+		else:
 			return None
+
+##################### Start ######################################
+# Input: void
+# Spawn player and craete snake
+	def start (self):
+		self.snake = Snake(game.spawn(), self.initial)
+		self.dead = 0
+		
 
 ###################### GoUp, GoDown, GoLeft, GoRight ##############
 	def goup(self):	self.snake.goup()
@@ -76,16 +88,19 @@ class Player:
 		if key in self.keylist.keys():
 			self.keylist[key]()
 
-###################### Make AI Move ##############################
+######################  AI Move ##############################
+# Input: void
+# Selects a move for AI, if the old path is useable follow that; otherwise,
+# find a new path
 	def aimove(self):
 		if self.dead > 0:
 			return
 		start = self.snake.gethead()
 		end = game.digplace
-		blocked = set (bord.obstacles + game.playerbodies)
+		blocked = set (board.obstacles + game.playerbodies)
 		def getneighbors (point):
-			return [ (bord.progress (point, dir)) for dir in [bord.up, bord.down, bord.left, bord.right]\
-				 if bord.progress (point, dir) not in blocked ]
+			return [ (board.progress (point, dir)) for dir in [board.up, board.down, board.left, board.right]\
+				 if board.progress (point, dir) not in blocked ]
 	
 		# If old path is ok, continue!
 		if self.path == [] or self.path[-1] != end or set(self.path) & set(game.playerbodies) != [] :	
@@ -122,8 +137,6 @@ class Player:
 
 		dir = tuple(map(operator.sub, self.path[0], start))
 		self.path.pop(0)
-		{ bord.up: self.goup, bord.down:self.godown, bord.left: self.goleft, bord.right: self.goright }[dir]()
-		
-		
+		{ board.up: self.goup, board.down:self.godown, board.left: self.goleft, board.right: self.goright }[dir]()
 		
 # vim: ts=2 sw=2
