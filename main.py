@@ -18,13 +18,12 @@ def main():
 	
 	
 	# number of player, game type, lives, mapname
-	while 1:
-		gametype = menu.choose (																					\
-			[{ "label" : "Single Player", "value": "1p"}, 									\
-			 { "label" : "2 Players Game", "value": "2p"},									\
-			 { "label" : "Create a Network Game", "value" : "master"},			\
-			 { "label" : "Connect to a Network Game", "value" : "slave"},		\
-			 { "label" : "QUIT", "value": None}]);
+	while 1:	
+		gametype = menu.choose ("",																			\
+		[{ "label" : "Single Player", "value": "1p"}, 									\
+		 { "label" : "Multi Players Game", "value": "multi"},						\
+		 { "label" : "Join a Network Game", "value" : "join"},					\
+		 { "label" : "QUIT", "value": None}])	
 
 		if gametype == None : 
 			break

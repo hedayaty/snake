@@ -5,6 +5,7 @@ from player import Player
 
 import renderer, board, menu
 
+# TODO: other items not used!
 otheritemtypes = ["R", " ", "P"]
 
 #################### Initilize Game #########################
@@ -25,10 +26,11 @@ def init(gametype):
 	cyan= (0,255,255)
 	
 
-	if gametype != "slave" :
+	if gametype != "join" :
 		list = os.listdir("maps")
 		list.sort()
-		mapname = menu.choose ([{ "label" : file, "value" : file} for file in list])
+		mapname = menu.choose ("Select the map:",\
+					[{ "label" : file, "value" : file} for file in list])
 		if mapname == None :
 			return False
 
@@ -36,57 +38,89 @@ def init(gametype):
 		items = {}
 	
 	# Get Game options
-	boolean = [ { "label" : "On", "value": True }, { "label" : "Off", "value": False } ]
-	tpoptions = [{ "description" : "NLPR: ", "name" : "nlpr", "options" : boolean}, {"description" : "Continue: ", "name" : "cont", "options" : boolean}]
-	if gametype == "1p":
-		tpoptions = []
+	boolean = [ { "label" : "On", "value": True }, 
+							{ "label" : "Off", "value": False } 
+						]
+	multioptions = [																								\
+			{ "description" : "NLPR: ", 																\
+				"name" : "nlpr", 																					\
+				"options" : boolean,																			\
+				"default" : False,																				\
+			}, 																													\
+			{	"description" : "Continue: ",															\
+				"name" : "cont", 																					\
+				"options" : boolean,																			\
+				"default" : False,																				\
+			},																													\
+			{	"description" : "Players:",																\
+				"name" : "nplayers",																			\
+				"default" : 2,																						\
+				"options" : [ { "label" : str(x), "value" : x} 						\
+												for x in range(1,7)												\
+										]																							\
+			}]
 
-	options = menu.select (tpoptions + [{	"description" : "Lives:", "name" : "lives", "options" : [ { "label" : str(x), "value" :x } for x in [1, 2, 3, 4, 5, 6, 10, 20, 50, 64, 100]] } ])
-	if options == False:
+	if gametype == "1p":
+		multioptions = []
+
+	options = menu.select ("Select Game Options",										\
+			multioptions + 																							\
+			[{	"description" : "Lives:", 															\
+					"name" : "lives", 																			\
+					"default" : 5,																					\
+					"options" : [ { "label" : str(x), "value" : x }					\
+						for x in [1, 2, 3, 4, 5, 10, 20, 50, 64, 100, 256]]} 	\
+			])
+	if options == None:
 		return False
 	if gametype == "1p":
 		nlpr = False
 		cont = False
+		nplayers = 1
 	else:
 		nlpr = options["nlpr"]["value"]
 		cont = options["cont"]["value"]
+		nplayers = options["nplayers"]["value"]
 	lives = options["lives"]["value"]
-		
 
 	# Get Players
 	ucolors = set()
 	udevs = set()
 	colors = [blue, pink, green, red, orange, cyan]
-	devs = [("Keypad", "keypad"), ("Keyboard (wasd)", "keyboard"), \
-					("Vim Keys (hjjkl)", "vim"), ("Computer", "ai")]
+	devs = [("Keypad", "keypad"), ("Keyboard (wasd)", "keyboard"),		\
+					("Vim Keys (hjjkl)", "vim"), 															\
+					("Computer", "ai"), ("Netwrok", "net")]
 
-	if gametype == "1p" : 
-		player1 = getplayer()
-		if player1 == None:
+	players = []
+	for i in range(nplayers):
+		player = getplayer(str(i+1))
+		if player == None:
 			return None
-		players = [ player1 ]
+		players.append(player)
 			
-	else :
-		player1 = getplayer()
-		if player1 == None:
-			return None
-
-		player2 = getplayer()
-		if player2 == None:
-			return None
-		players = [ player1, player2 ]
-
 	renderer.updateboard()
 	return True
 
 ######################### Get Player #################################
 # Input: void
 # Output: Player instance
-def getplayer():
-	menuname = { "name" : "name", "label" : "Player" , "description" : "Name: "}
-	menudev = { "description" : "Controlls: ", "name" : "dev", "options": [ { "label" : label, "value": dev } for label,dev in devs if dev not in udevs] }
-	menucolor = { "name" : "color", "options" : [ {"label" : "color", "value" : color } for color in colors if color not in ucolors] }
-	values =  menu.select ( [ menuname, menudev, menucolor ])
+def getplayer(pnum):
+	menuname = { "name" : "name", "label" : "Player " + pnum , "description" : "Name: "}
+	menudev = { "description" : "Controlls: ", 									\
+							"name" : "dev", 																\
+							"options": 																			\
+							[ { "label" : label, "value": dev } 						\
+								for label,dev in devs if dev not in udevs			\
+							] 																							\
+						}
+	menucolor = { "name" : "color", 
+								"options" : 
+								[ {"label" : "color", "value" : color } 
+									for color in colors if color not in ucolors
+								] 
+							}
+
+	values =  menu.select ("Select Player " + pnum,	[ menuname, menudev, menucolor ])
 	if values == None:
 		return None
 
@@ -95,7 +129,9 @@ def getplayer():
 	dev = values["dev"]["value"]
 
 	ucolors.add(color)
-	udevs.add(dev)
+	# Same players can not use the same device but ai and net are ok!
+	if dev not in [ "ai", "net" ]:
+		udevs.add(dev)
 	return Player (name, dev, color, lives)
 
 ###################### Place #########################################
@@ -123,7 +159,7 @@ def spawn():
 						board.obstacles +\
 						items.keys())
 	dim = board.dim
-	margin = 5
+	margin = 7
 	tries = 0
 	while 1:
 		loc = random.randint (margin, dim[0] - margin - 1),\
@@ -202,7 +238,7 @@ def mainloop ():
 						break
 
 			# Check if hit any items
-			elif head in items.keys() :
+			elif items.has_key(head) :
 				# TODO: Assumed items are only numbers
 				del items[head]
 				player.score += 10 * digit
@@ -213,7 +249,7 @@ def mainloop ():
 					break
 				else:
 					digplace = place (str(digit))
-		heads[players] = head # Use this to detect head-to-head
+		heads[player] = head # Use this to detect head-to-head
 
 						
 

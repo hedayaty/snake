@@ -103,6 +103,7 @@ class Player:
 				 if board.progress (point, dir) not in blocked ]
 	
 		# If old path is ok, continue!
+		last = None
 		if self.path == [] or self.path[-1] != end or set(self.path) & set(game.playerbodies) != [] :	
 			# Use BFS
 			moves = getneighbors(start) 
@@ -118,17 +119,17 @@ class Player:
 							next.append(point)
 							mark.add(point)
 							parrent[point] = move
+							last = point
 				moves = next
-				if end in mark:
-					break
-			# If there is no path do nothing!
-			if end not in mark:
-				self.path = []
-				return
 
 			# Find the path
-			node = end
 			self.path = []
+			if end in mark:
+				node = end
+			elif last == None:
+				return #Soon to be dead!
+			else: # Try to survie as long as possible
+				node = last 
 			while parrent[node]:
 				self.path.append(node)
 				node = parrent[node]
