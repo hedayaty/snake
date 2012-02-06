@@ -1,5 +1,4 @@
 import pygame,operator,itertools
-from snake import Snake
 
 import game,board
 
@@ -48,6 +47,8 @@ class Player:
 # Input: void
 # Output: if player has any more lives
 	def die (self):
+		for point in self.body[0:-1]:
+				game.blocked.remove(point)
 		self.score -= 40
 		self.lives -= 1
 		self.dead = self.deadtimer
@@ -55,38 +56,89 @@ class Player:
 		return self.lives == 0
 
 ############################ GO ###################################
-# Input: go ahead
+# Input: void
 # Output: head if player is alive; otherwise, none
+# Go ahead using dir, if there is potential to grow then  grow
 	def go(self): 
-		if self.dead == 1:
-			self.start ()
+		# Reduce timer if dead
 		if self.dead > 0:		
 			self.dead -= 1
-		if self.dead == 0 :
-			return self.snake.go()
-		else:
+			# If dead timer ended, respawn
+			if self.dead == 0:
+				self.start ()
 			return None
+
+		head = self.gethead()
+		head = board.progress(head, self.dir)
+		self.body.append (head)
+		if self.growable > 0 :
+			self.growable -= 1
+		else :
+			game.blocked.remove(self.body.pop(0))
+		self.useddir = self.dir	
+		return head
 
 ##################### Start ######################################
 # Input: void
 # Spawn player and craete snake
 	def start (self):
-		self.snake = Snake(game.spawn(), self.initial)
+		self.body = [game.spawn()]
+		self.growable = self.initial
+		self.dir = board.defaultdir
+		self.useddir = self.dir
 		self.dead = 0
+
+############################# Get Head	###################################
+# Input: void
+# Get the head
+	def gethead (self):
+		return self.body[-1]
+
+
+######################### Reverse ########################################
+# Input: void
+# Reverse the snake, happens when opponent easts special item
+	def reverse (self):
+		body.reverse()
+
+######################### Go Up,Down,Right, Left  ########################
+# Input: void
+# Change direction to up/down/right/left
+	def goup (self):
+		if self.useddir != board.down :
+			self.dir = board.up
+
+	def godown (self):
+		if self.useddir != board.up :
+			self.dir = board.down
+
+	def goright (self):
+		if self.useddir != board.left :
+			self.dir = board.right
+
+	def goleft (self):
+		if self.useddir != board.right :
+			self.dir = board.left
+
+########################### Grow ###############################################
+# Input: length
+# Add the amount the potential growth
+	def grow (self, length) :
+		self.growable += length
 		
-
-###################### GoUp, GoDown, GoLeft, GoRight ##############
-	def goup(self):	self.snake.goup()
-	def godown(self): self.snake.godown()
-	def goright(self): self.snake.goright()
-	def goleft(self): self.snake.goleft()
-
 ####################### Use key ###################################
 # Input: key
 # Change direction is key is for me
 	def usekey (self, key):
 		if key in self.keylist.keys():
 			self.keylist[key]()
+
+###################### Get Neighbors #################################
+# Input: point
+# Output: Non-blocked neighbors
+	def getneighbors (self, point):
+		return [ (board.progress (point, dir)) for dir in board.dirs	\
+				 if board.progress (point, dir) not in game.blocked ]
 
 ######################  AI Move ##############################
 # Input: void
@@ -95,18 +147,14 @@ class Player:
 	def aimove(self):
 		if self.dead > 0:
 			return
-		start = self.snake.gethead()
+		start = self.gethead()
 		end = game.digplace
-		blocked = set (board.obstacles + game.playerbodies)
-		def getneighbors (point):
-			return [ (board.progress (point, dir)) for dir in [board.up, board.down, board.left, board.right]\
-				 if board.progress (point, dir) not in blocked ]
 	
 		# If old path is ok, continue!
 		last = None
-		if self.path == [] or self.path[-1] != end or set(self.path) & set(game.playerbodies) != [] :	
+		if self.path == [] or self.path[-1] != end or set(self.path) & set(game.playerheads) != set():	
 			# Use BFS
-			moves = getneighbors(start) 
+			moves = self.getneighbors(start) 
 			parrent = {start:None}
 			for move in moves:
 				parrent[move] = start
@@ -114,7 +162,7 @@ class Player:
 			while moves :
 				next = []
 				for move in moves :
-					for point in getneighbors(move) :
+					for point in self.getneighbors(move) :
 						if point not in mark:
 							next.append(point)
 							mark.add(point)
@@ -135,9 +183,9 @@ class Player:
 				node = parrent[node]
 			
 			self.path.reverse()
-
-		dir = tuple(map(operator.sub, self.path[0], start))
-		self.path.pop(0)
-		{ board.up: self.goup, board.down:self.godown, board.left: self.goleft, board.right: self.goright }[dir]()
+		if len(path) > 0:
+			self.dir = tuple(map(operator.sub, self.path[0], start))
+			self.path.pop(0)
+#		{ board.up: self.goup, board.down:self.godown, board.left: self.goleft, board.right: self.goright }[dir]()
 		
 # vim: ts=2 sw=2

@@ -1,7 +1,6 @@
 import pygame, operator, random
 from pygame import *
 #from player import Player
-#from snake import Snake
 
 import board, game
 
@@ -38,7 +37,7 @@ def render ():
 	screen.fill(black)
 	screen.blit(boardimage, [0]*2)
 	for player in game.players :
-		pixels = player.snake.body
+		pixels = player.body
 		if player.dead > 0:
 			pixels = random.sample (pixels, player.dead * len(pixels) / player.deadtimer)
 		for pixel in pixels :

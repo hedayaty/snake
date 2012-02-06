@@ -55,9 +55,9 @@ def init(gametype):
 			{ "description" : "End with numbers: ",											\
 				"name" : "numbersend",																		\
 				"options" : boolean,																			\
-				"default" : False,																				\
+				"default" : True,																					\
 			},																													\
-			{	"description" : "Players: ",																\
+			{	"description" : "Players: ",															\
 				"name" : "nplayers",																			\
 				"default" : 2,																						\
 				"options" : [ { "label" : str(x), "value" : x} 						\
@@ -82,7 +82,7 @@ def init(gametype):
 		nlpr = False
 		cont = False
 		nplayers = 1
-		numbersend = False
+		numbersend = True
 	else:
 		nlpr = options["nlpr"]["value"]
 		cont = options["cont"]["value"]
@@ -111,7 +111,7 @@ def init(gametype):
 		for player in players:
 			if player.dev == "net":
 				if network.waitfor(player) == None:
-					network.sendinfo (player, bord.dim, bord.obstacles)
+					network.sendinfo (player, board.dim, board.obstacles)
 					return None
 			
 	renderer.updateboard()
@@ -158,14 +158,12 @@ def getplayer(pnum):
 # Output: place of item
 # Places an item of type in a free spot with default timeout 300
 def place (type):
-	blocked = playerbodies + \
-						board.obstacles +\
-						items.keys()
 	dim = board.dim
-	loc = blocked[0]
-	while loc in blocked:
+	while 1:
 		loc = random.randint (0, dim[0] - 1),\
 						random.randint (0, dim[1] - 1)
+		if loc not in blocked:
+			break
 
 	items[loc] = {"type" : type, "timer" : 300}
 	return loc
@@ -174,18 +172,16 @@ def place (type):
 # Input: void
 # Ouput: a free location for player spawn
 def spawn():
-	blocked = set(playerbodies + \
-						board.obstacles +\
-						items.keys())
 	dim = board.dim
 	margin = 5
 	tries = 0
 	while 1:
 		loc = random.randint (margin, dim[0] - margin - 1),\
 					random.randint (margin, dim[1] - margin - 1)
+		ranges = itertools.product (range(-margin, margin+1), repeat=2)
+
 		if set(tuple(map(operator.add, neib, loc))\
-				for	neib in itertools.product (range(-margin, margin+1), repeat=2)
-				) &	blocked :
+				for	neib in ranges	) &	blocked :
 			tries += 1
 			if tries == dim[0] * dim[1]: # Almost all the board!
 				tries = 0
@@ -196,15 +192,16 @@ def spawn():
 	return loc
 		
 def mainloop ():
-	global playerbodies, items, gameover, clock, digplace
+	global items, gameover, clock, digplace
+	global blocked, playerheads
 	digit = 1
 	clock = pygame.time.Clock()
-
-	playerbodies = []
+	
+	blocked = set(board.obstacles)
+#	playerbodies = []
 	for player in players:
 		player.start ()
 
-#	playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))	
 	# TODO: Trow more items on the board!
 	digplace = place(str(digit))
 	gameover = False
@@ -233,24 +230,26 @@ def mainloop ():
 			elif player.dev == "net":
 				network.getkey (player)
 				network.sendinfo (player, players, items)
-					
 
-		heads = {}
+		for player in players:		
+			if player.dead == 0:
+				blocked.add(player.gethead())
+		playerheads = []
 		dead = set()
 		for player in players:
 			head = player.go()
 			# Check if hit the wall or ther players
-			if head in board.obstacles or head in playerbodies:
+			if head in blocked:
 				if digit > 5:
 					digit -= 4
 				else:
 					digit = 1
 				items[digplace]["type"] = str(digit)
-				if nlpr and head in playerbodies:
+				if nlpr:
 					for other in players:
 						if other != player:
-							if head in other.snake.body:
-								other.snake.grow (len(player.snake.body))
+							if head in other.body:
+								other.grow (len(player.body))
 				dead.add(player)
 
 			# Check if hit any items
@@ -258,7 +257,7 @@ def mainloop ():
 				# TODO: Assumed items are only numbers
 				del items[head]
 				player.score += 10 * digit
-				player.snake.grow(digit * 4)
+				player.grow(digit * 4)
 				digit += 1
 				if digit < 10 or not numbersend:
 					if digit == 10:
@@ -266,15 +265,11 @@ def mainloop ():
 					digplace = place (str(digit))
 				else:
 					gameover = True
-			heads[player] = head # Use this to detect head-to-head
+			playerheads.append(head) # Use this to detect head-to-head
 		# Detect head-to-head
 		for player1 in players:
-			if player1.dead > 0:
-				continue
-			for player2 in players:
-				if player1 != player2 and heads[player1] == heads[player2]:
-					dead.add(player1)
-					dead.add(player2)
+			if player1.dead == 0 and playerheads.count(player.gethead()) > 1:
+				dead.add(player1)
 
 		# Now see who is dead	
 		for player in list(dead):
@@ -283,12 +278,13 @@ def mainloop ():
 					players.remove(player)
 				else:
 					gameover = True
+		# Do not go on without players!
 		if players == []:
 			gameover = True
 			continue
-				
+						
 		# keep track of player bodies as obstacles as well
-		playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))		
+		#playerbodies = reduce(operator.add, (player.body[:] for player in players))		
 
 		# Check for timer exppirations
 		for loc in items.keys() :
