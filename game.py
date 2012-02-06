@@ -1,9 +1,8 @@
 import sys,pygame,operator,random, itertools, os
 from pygame import *
 
+import renderer, board, menu, network
 from player import Player
-
-import renderer, board, menu
 
 # TODO: other items not used!
 otheritemtypes = ["R", " ", "P"]
@@ -14,7 +13,8 @@ otheritemtypes = ["R", " ", "P"]
 # Supposed to choose names and color for players
 def init(gametype):
 	global players, items
-	global ucolors, udevs, devs, colors, lives
+	global ucolors, udevs, devs, colors
+	global numbersend, lives, netgame
 	global blue, pink, green, red, orange,cyan
 	global nlpr, cont
 
@@ -52,7 +52,12 @@ def init(gametype):
 				"options" : boolean,																			\
 				"default" : False,																				\
 			},																													\
-			{	"description" : "Players:",																\
+			{ "description" : "End with numbers: ",											\
+				"name" : "numbersend",																		\
+				"options" : boolean,																			\
+				"default" : False,																				\
+			},																													\
+			{	"description" : "Players: ",																\
 				"name" : "nplayers",																			\
 				"default" : 2,																						\
 				"options" : [ { "label" : str(x), "value" : x} 						\
@@ -65,7 +70,7 @@ def init(gametype):
 
 	options = menu.select ("Select Game Options",										\
 			multioptions + 																							\
-			[{	"description" : "Lives:", 															\
+			[{	"description" : "Lives: ", 															\
 					"name" : "lives", 																			\
 					"default" : 5,																					\
 					"options" : [ { "label" : str(x), "value" : x }					\
@@ -77,10 +82,12 @@ def init(gametype):
 		nlpr = False
 		cont = False
 		nplayers = 1
+		numbersend = False
 	else:
 		nlpr = options["nlpr"]["value"]
 		cont = options["cont"]["value"]
 		nplayers = options["nplayers"]["value"]
+		numbersend = options["numbersend"]["value"]
 	lives = options["lives"]["value"]
 
 	# Get Players
@@ -92,11 +99,20 @@ def init(gametype):
 					("Computer", "ai"), ("Netwrok", "net")]
 
 	players = []
+	netgame = False
 	for i in range(nplayers):
 		player = getplayer(str(i+1))
 		if player == None:
 			return None
 		players.append(player)
+
+	if netgame:
+#		network.startserver()
+		for player in players:
+			if player.dev == "net":
+				if network.waitfor(player) == None:
+					network.sendinfo (player, bord.dim, bord.obstacles)
+					return None
 			
 	renderer.updateboard()
 	return True
@@ -105,8 +121,9 @@ def init(gametype):
 # Input: void
 # Output: Player instance
 def getplayer(pnum):
+	global netgame
 	menuname = { "name" : "name", "label" : "Player " + pnum , "description" : "Name: "}
-	menudev = { "description" : "Controlls: ", 									\
+	menudev = { "description" : "Control: ", 									\
 							"name" : "dev", 																\
 							"options": 																			\
 							[ { "label" : label, "value": dev } 						\
@@ -132,6 +149,8 @@ def getplayer(pnum):
 	# Same players can not use the same device but ai and net are ok!
 	if dev not in [ "ai", "net" ]:
 		udevs.add(dev)
+	if dev == "net":
+		netgame = True
 	return Player (name, dev, color, lives)
 
 ###################### Place #########################################
@@ -159,7 +178,7 @@ def spawn():
 						board.obstacles +\
 						items.keys())
 	dim = board.dim
-	margin = 7
+	margin = 5
 	tries = 0
 	while 1:
 		loc = random.randint (margin, dim[0] - margin - 1),\
@@ -211,11 +230,13 @@ def mainloop ():
 		for player in players:	
 			if player.dev == "ai":
 				player.aimove()
+			elif player.dev == "net":
+				network.getkey (player)
+				network.sendinfo (player, players, items)
 					
-		#TODO: for network game as master, also process keys from client
-		#TODO: for network game as slave, also send keys to server
 
 		heads = {}
+		dead = set()
 		for player in players:
 			head = player.go()
 			# Check if hit the wall or ther players
@@ -230,12 +251,7 @@ def mainloop ():
 						if other != player:
 							if head in other.snake.body:
 								other.snake.grow (len(player.snake.body))
-				if player.die() :
-					if cont and len(players) > 0:
-						players.remove(player)
-					else:
-						gameover = True
-						break
+				dead.add(player)
 
 			# Check if hit any items
 			elif items.has_key(head) :
@@ -244,15 +260,33 @@ def mainloop ():
 				player.score += 10 * digit
 				player.snake.grow(digit * 4)
 				digit += 1
-				if digit == 10:
-					gameover = True
-					break
-				else:
+				if digit < 10 or not numbersend:
+					if digit == 10:
+						digit = random.randint(1,6)
 					digplace = place (str(digit))
-		heads[player] = head # Use this to detect head-to-head
+				else:
+					gameover = True
+			heads[player] = head # Use this to detect head-to-head
+		# Detect head-to-head
+		for player1 in players:
+			if player1.dead > 0:
+				continue
+			for player2 in players:
+				if player1 != player2 and heads[player1] == heads[player2]:
+					dead.add(player1)
+					dead.add(player2)
 
-						
-
+		# Now see who is dead	
+		for player in list(dead):
+			if player.die():
+				if cont:
+					players.remove(player)
+				else:
+					gameover = True
+		if players == []:
+			gameover = True
+			continue
+				
 		# keep track of player bodies as obstacles as well
 		playerbodies = reduce(operator.add, (player.snake.body[:] for player in players))		
 
@@ -262,7 +296,7 @@ def mainloop ():
 			item["timer"] -= 1
 			if item["timer"] == 0 :
 				type = item["type"]
-				del item
+				del items[loc]
 				if type in otheritemtypes :
 					place (random.choice(otheritemtypes))
 				else: # It is number, put the same number somewhere else on the board

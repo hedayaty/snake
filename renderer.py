@@ -37,7 +37,6 @@ def updateboard () :
 def render ():
 	screen.fill(black)
 	screen.blit(boardimage, [0]*2)
-	# TODO: Render Items
 	for player in game.players :
 		pixels = player.snake.body
 		if player.dead > 0:
@@ -46,6 +45,7 @@ def render ():
 			screen.fill (player.color, getRect(pixel))
 				
 	for place,item in game.items.iteritems():
+		# TODO: Replace them with images
 		text = rfont.render (item["type"], True, boardercolor)
 		screen.blit(text, getRect(place))
 	
