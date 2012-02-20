@@ -37,6 +37,8 @@ def render ():
 	screen.fill(black)
 	screen.blit(boardimage, [0]*2)
 	for player in game.players :
+		if not player.playing:
+			continue
 		pixels = player.body
 		if player.dead > 0:
 			pixels = random.sample (pixels, player.dead * len(pixels) / player.deadtimer)
@@ -49,7 +51,9 @@ def render ():
 		screen.blit(text, getRect(place))
 	
 	share = size[0] / len(game.players)
-
+	for pixel in list(game.blocked):
+		screen.fill([100,100,100], Rect((pixel[0] * pixelsize[0] + pixelsize[0] /3 , pixel[1] * pixelsize[1] + pixelsize[1] / 3), (pixelsize[0] / 3, pixelsize[1] / 3)))
+				
 	for num,player in enumerate(game.players) :
 		text = rfont.render ("{}, Score: {}, Lives: {} "\
 		.format(player.name, player.score, player.lives), True, player.color)

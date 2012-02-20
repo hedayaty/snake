@@ -15,6 +15,7 @@ class Player:
 		self.color = color
 		self.lives = lives
 		self.score = 0
+		self.playing = True
 
 		self.path = []
 
@@ -48,7 +49,7 @@ class Player:
 # Output: if player has any more lives
 	def die (self):
 		for point in self.body[0:-1]:
-				game.blocked.remove(point)
+			game.blocked.remove(point)
 		self.score -= 40
 		self.lives -= 1
 		self.dead = self.deadtimer
@@ -82,6 +83,13 @@ class Player:
 # Input: void
 # Spawn player and craete snake
 	def start (self):
+		if self.lives == 0:
+			self.go = lambda : None
+			self.aimove = lambda : None
+			self.body = []
+			self.playing = False
+			game.remplayers -= 1
+			return
 		self.body = [game.spawn()]
 		self.growable = self.initial
 		self.dir = board.defaultdir
@@ -137,8 +145,7 @@ class Player:
 # Input: point
 # Output: Non-blocked neighbors
 	def getneighbors (self, point):
-		return [ (board.progress (point, dir)) for dir in board.dirs	\
-				 if board.progress (point, dir) not in game.blocked ]
+		return set([ (board.progress (point, dir)) for dir in board.dirs]) - game.blocked
 
 ######################  AI Move ##############################
 # Input: void
@@ -152,40 +159,42 @@ class Player:
 	
 		# If old path is ok, continue!
 		last = None
-		if self.path == [] or self.path[-1] != end or set(self.path) & set(game.playerheads) != set():	
+		if self.path == [] or self.path[-1] != end or set(self.path) & game.blocked != set():	
 			# Use BFS
 			moves = self.getneighbors(start) 
 			parrent = {start:None}
-			for move in moves:
+			for move in list(moves):
 				parrent[move] = start
-			mark = set([start]) | set(moves)
+			mark = set([start]) | moves
 			while moves :
-				next = []
-				for move in moves :
+				next = set()
+				for move in list(moves) :
 					for point in self.getneighbors(move) :
 						if point not in mark:
-							next.append(point)
+							next.add(point)
 							mark.add(point)
 							parrent[point] = move
 							last = point
 				moves = next
 
 			# Find the path
-			self.path = []
 			if end in mark:
 				node = end
 			elif last == None:
 				return #Soon to be dead!
-			else: # Try to survie as long as possible
+			elif board.progress(start, self.dir) in game.blocked: # Try to survie as long as possible
 				node = last 
-			while parrent[node]:
-				self.path.append(node)
-				node = parrent[node]
-			
-			self.path.reverse()
-		if len(path) > 0:
-			self.dir = tuple(map(operator.sub, self.path[0], start))
-			self.path.pop(0)
+			else:
+				node = None
+			if node != None:
+				self.path = []
+				while parrent[node]:
+					self.path.append(node)
+					node = parrent[node]
+				self.path.reverse()
+		if len(self.path) > 0:
+			self.dir = tuple(map(operator.sub, self.path.pop(0), start))
+#			self.path.pop(0)
 #		{ board.up: self.goup, board.down:self.godown, board.left: self.goleft, board.right: self.goright }[dir]()
 		
 # vim: ts=2 sw=2

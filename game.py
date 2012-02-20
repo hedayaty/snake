@@ -12,7 +12,7 @@ otheritemtypes = ["R", " ", "P"]
 # Initilizes a game with the given parameters
 # Supposed to choose names and color for players
 def init(gametype):
-	global players, items
+	global players, items, remplayers
 	global ucolors, udevs, devs, colors
 	global numbersend, lives, netgame
 	global blue, pink, green, red, orange,cyan
@@ -61,7 +61,7 @@ def init(gametype):
 				"name" : "nplayers",																			\
 				"default" : 2,																						\
 				"options" : [ { "label" : str(x), "value" : x} 						\
-												for x in range(1,7)												\
+												for x in range(1,5)												\
 										]																							\
 			}]
 
@@ -94,9 +94,12 @@ def init(gametype):
 	ucolors = set()
 	udevs = set()
 	colors = [blue, pink, green, red, orange, cyan]
-	devs = [("Keypad", "keypad"), ("Keyboard (wasd)", "keyboard"),		\
-					("Vim Keys (hjjkl)", "vim"), 															\
-					("Computer", "ai"), ("Netwrok", "net")]
+	devs = [("Keypad", "keypad"),												\
+					("Computer", "ai"), 												\
+					("Keyboard (wasd)", "keyboard"),						\
+					("Vim Keys (hjjkl)", "vim"), 								\
+					("Netwrok", "net")													\
+					]
 
 	players = []
 	netgame = False
@@ -115,6 +118,7 @@ def init(gametype):
 					return None
 			
 	renderer.updateboard()
+	remplayers = nplayers
 	return True
 
 ######################### Get Player #################################
@@ -205,6 +209,7 @@ def mainloop ():
 	# TODO: Trow more items on the board!
 	digplace = place(str(digit))
 	gameover = False
+	playerheads = []
 
 	while 1:
 		clock.tick(10)
@@ -225,39 +230,41 @@ def mainloop ():
 			continue
 
 		for player in players:	
-			if player.dev == "ai":
+			if player.dev == "ai" and player.playing:
 				player.aimove()
 			elif player.dev == "net":
-				network.getkey (player)
+				if player.playing:
+					network.getkey (player)
 				network.sendinfo (player, players, items)
 
-		for player in players:		
-			if player.dead == 0:
+		for player in players:
+			if player.playing and player.dead == 0:
 				blocked.add(player.gethead())
 		playerheads = []
 		dead = set()
 		for player in players:
+			if not player.playing:
+				continue
 			head = player.go()
+			if head != None:
+				playerheads.append(head) # Use this to detect head-to-head
 			# Check if hit the wall or ther players
 			if head in blocked:
-				if digit > 5:
-					digit -= 4
-				else:
-					digit = 1
-				items[digplace]["type"] = str(digit)
+				dead.add(player)
 				if nlpr:
 					for other in players:
 						if other != player:
 							if head in other.body:
 								other.grow (len(player.body))
-				dead.add(player)
+								other.score += len(player.body)
 
 			# Check if hit any items
 			elif items.has_key(head) :
 				# TODO: Assumed items are only numbers
 				del items[head]
 				player.score += 10 * digit
-				player.grow(digit * 4)
+				#player.grow(digit * 4)
+				player.grow(digit * 10)
 				digit += 1
 				if digit < 10 or not numbersend:
 					if digit == 10:
@@ -265,23 +272,26 @@ def mainloop ():
 					digplace = place (str(digit))
 				else:
 					gameover = True
-			playerheads.append(head) # Use this to detect head-to-head
 		# Detect head-to-head
 		for player1 in players:
-			if player1.dead == 0 and playerheads.count(player.gethead()) > 1:
+			if player1.playing and playerheads.count(player1.gethead()) > 1:
 				dead.add(player1)
 
 		# Now see who is dead	
 		for player in list(dead):
 			if player.die():
-				if cont:
-					players.remove(player)
-				else:
+				if not cont:
 					gameover = True
-		# Do not go on without players!
-		if players == []:
+
+		if remplayers == 0:
 			gameover = True
-			continue
+		
+		if dead:
+			if digit > 5:
+				digit -= 4
+			else:
+				digit = 1
+			items[digplace]["type"] = str(digit)
 						
 		# keep track of player bodies as obstacles as well
 		#playerbodies = reduce(operator.add, (player.body[:] for player in players))		
