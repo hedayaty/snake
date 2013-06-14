@@ -97,7 +97,7 @@ def init(gametype):
 	devs = [("Keypad", "keypad"),												\
 					("Computer", "ai"), 												\
 					("Keyboard (wasd)", "keyboard"),						\
-					("Vim Keys (hjjkl)", "vim"), 								\
+					("Vim Keys (hjkl)", "vim"), 								\
 					("Netwrok", "net")													\
 					]
 
